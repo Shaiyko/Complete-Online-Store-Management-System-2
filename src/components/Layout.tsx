@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import RealTimeNotifications from './RealTimeNotifications';
+import EnhancedNotificationSystem from './EnhancedNotificationSystem';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import ConnectionStatus from './ConnectionStatus';
 import { 
@@ -49,17 +50,25 @@ const Layout: React.FC = () => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // เพิ่ม skip to main content link สำหรับ accessibility
   return (
     <div className="min-h-screen bg-gray-50 relative">
+      {/* Skip to main content link สำหรับ screen readers */}
+      <a href="#main-content" className="skip-to-main">
+        Skip to main content
+      </a>
+      
       {/* Mobile Header - Only visible on mobile */}
-      <div className="lg:hidden bg-white shadow-md border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <header className="lg:hidden bg-white shadow-md border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center space-x-2">
           <Store className="h-6 w-6 text-blue-600" />
-          <span className="text-lg font-bold text-gray-900">StoreManager</span>
+          <span className="text-lg font-bold text-gray-900 text-responsive">StoreManager</span>
         </div>
         <button
+          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={isMobileMenuOpen}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors touch-target"
         >
           {isMobileMenuOpen ? (
             <X className="h-6 w-6" />
@@ -67,32 +76,36 @@ const Layout: React.FC = () => {
             <Menu className="h-6 w-6" />
           )}
         </button>
-      </div>
+      </header>
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar - Responsive */}
-      <div className={`
+      <nav 
+        className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:inset-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      `}
+        aria-label="Main navigation"
+      >
         {/* Desktop Header - Hidden on mobile */}
-        <div className="flex h-16 items-center justify-center border-b border-gray-200">
+        <div className="flex h-16 items-center justify-center border-b border-gray-200 desktop-only">
           <div className="flex items-center space-x-2">
             <Store className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900 hidden lg:block">StoreManager</span>
+            <span className="text-xl font-bold text-gray-900">StoreManager</span>
           </div>
         </div>
         
         {/* Navigation Menu */}
-        <nav className="mt-6 px-4 flex-1 overflow-y-auto">
+        <div className="mt-6 px-4 flex-1 overflow-y-auto">
           <div className="space-y-2">
             {filteredNavigation.map((item) => {
               const Icon = item.icon;
@@ -103,6 +116,7 @@ const Layout: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center space-x-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors touch-target ${
                     isActive
                       ? 'bg-blue-100 text-blue-700'
@@ -115,7 +129,7 @@ const Layout: React.FC = () => {
               );
             })}
           </div>
-        </nav>
+        </div>
 
         {/* User info and logout - Responsive */}
         <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
@@ -124,7 +138,7 @@ const Layout: React.FC = () => {
               <User className="h-5 w-5 text-blue-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-gray-900 text-ellipsis">
                 {user?.name}
               </p>
               <p className="text-xs text-gray-500 capitalize">
@@ -132,6 +146,7 @@ const Layout: React.FC = () => {
               </p>
             </div>
             <button
+              aria-label="Logout"
               onClick={handleLogout}
               className="flex items-center justify-center h-8 w-8 text-gray-400 hover:text-red-600 transition-colors touch-target"
             >
@@ -139,23 +154,26 @@ const Layout: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Main content - Responsive */}
       <div className="lg:pl-64">
         {/* Top bar with notifications - Responsive */}
-        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4 mt-16 lg:mt-0">
-          <div className="flex justify-end">
+        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4 mt-16 lg:mt-0 sticky top-0 z-30">
+          <div className="flex justify-end items-center space-x-4">
             <ConnectionStatus />
             <RealTimeNotifications />
           </div>
-        </div>
+        </header>
         
         {/* Main content area - Responsive padding */}
-        <main className="p-4 lg:p-6 container-mobile">
+        <main id="main-content" className="p-4 lg:p-6 container-mobile" role="main">
           <Outlet />
         </main>
       </div>
+      
+      {/* Enhanced Notification System */}
+      <EnhancedNotificationSystem />
       
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />

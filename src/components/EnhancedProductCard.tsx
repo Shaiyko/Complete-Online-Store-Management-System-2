@@ -29,6 +29,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const getStockStatus = () => {
     if (product.stock === 0) return { text: 'Out of Stock', color: 'text-red-600 bg-red-100' };
@@ -54,29 +55,50 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
     ));
   };
 
+  // Handle image loading และ error
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(true);
+  };
+
   if (compact) {
     return (
-      <div className="card-responsive p-4 mobile-optimized">
+      <div className="card-responsive p-4 mobile-optimized" role="article" aria-label={`Product: ${product.name}`}>
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-16 h-16 object-cover rounded-lg lazy-image"
-              onLoad={() => setImageLoaded(true)}
-            />
-            {!imageLoaded && (
-              <div className="absolute inset-0 bg-gray-200 rounded-lg animate-pulse" />
+            {!imageError ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className={`w-16 h-16 object-cover rounded-lg transition-opacity duration-300 ${
+                  imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Package className="h-6 w-6 text-gray-400" />
+              </div>
+            )}
+            {!imageLoaded && !imageError && (
+              <div className="absolute inset-0 bg-gray-200 rounded-lg animate-pulse skeleton" />
             )}
           </div>
           
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate text-responsive">{product.name}</h3>
+            <h3 className="font-semibold text-gray-900 text-ellipsis text-responsive">{product.name}</h3>
             <p className="text-lg font-bold text-blue-600 text-responsive">
               ฿{product.price.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className={`px-2 py-1 text-xs rounded-full ${stockStatus.color}`}>
+              <span className={`px-2 py-1 text-xs rounded-full ${stockStatus.color}`} aria-label={`Stock status: ${stockStatus.text}`}>
                 {stockStatus.text}
               </span>
               <span className="text-sm text-gray-500">Stock: {product.stock}</span>
@@ -85,6 +107,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
           
           {showActions && (
             <button
+              aria-label={`Add ${product.name} to cart`}
               onClick={() => onAddToCart?.(product)}
               disabled={product.stock === 0}
               className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-target"
@@ -98,29 +121,46 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   }
 
   return (
-    <div className="card-responsive group mobile-optimized">
+    <article className="card-responsive group mobile-optimized" aria-label={`Product: ${product.name}`}>
       {/* Image Section */}
       <div className="relative">
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 lazy-image"
-          onLoad={() => setImageLoaded(true)}
-        />
-        {!imageLoaded && (
-          <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+        {!imageError ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className={`w-full h-48 object-cover transition-all duration-300 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              transform: 'scale(1)',
+              transition: 'transform 0.3s ease, opacity 0.3s ease'
+            }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <Package className="h-12 w-12 text-gray-400" />
+          </div>
+        )}
+        
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse skeleton" />
         )}
         
         {/* Overlay Actions */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 desktop-only">
           <div className="flex space-x-2">
             <button
+              aria-label={`View details for ${product.name}`}
               onClick={() => onViewDetails?.(product)}
               className="p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors touch-target"
             >
               <Eye className="h-5 w-5 text-gray-700" />
             </button>
             <button
+              aria-label={isLiked ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
               onClick={() => setIsLiked(!isLiked)}
               className={`p-3 rounded-full shadow-lg transition-colors touch-target ${
                 isLiked ? 'bg-red-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -133,7 +173,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 
         {/* Stock Status Badge */}
         <div className="absolute top-3 left-3">
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`}>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`} aria-label={`Stock status: ${stockStatus.text}`}>
             {stockStatus.text}
           </span>
         </div>
@@ -160,18 +200,18 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+        <h3 className="font-semibold text-gray-900 mb-2 text-clamp-2 group-hover:text-blue-600 transition-colors text-responsive">
           {product.name}
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+        <p className="text-sm text-gray-600 mb-3 text-clamp-2 text-responsive-small">
           {product.description}
         </p>
 
         {/* Rating */}
         {product.rating && (
-          <div className="flex items-center space-x-2 mb-3">
+          <div className="flex items-center space-x-2 mb-3" role="img" aria-label={`Rating: ${product.rating} out of 5 stars`}>
             <div className="flex items-center">
               {renderStars(product.rating)}
             </div>
@@ -197,7 +237,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
           </div>
           
           {product.stock <= 5 && product.stock > 0 && (
-            <div className="flex items-center space-x-1 text-orange-600">
+            <div className="flex items-center space-x-1 text-orange-600" role="alert" aria-label="Low stock warning">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">Low Stock</span>
             </div>
@@ -225,19 +265,21 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 
         {/* Actions */}
         {showActions && (
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 mobile-stack">
             <button
+              aria-label={product.stock === 0 ? 'Product out of stock' : `Add ${product.name} to cart`}
               onClick={() => onAddToCart?.(product)}
               disabled={product.stock === 0}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-target"
             >
               <ShoppingCart className="h-4 w-4" />
               <span>{product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
             </button>
             
             <button
+              aria-label={`View details for ${product.name}`}
               onClick={() => onViewDetails?.(product)}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors touch-target"
             >
               <Eye className="h-4 w-4" />
             </button>
@@ -255,7 +297,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 
