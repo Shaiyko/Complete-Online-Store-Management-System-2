@@ -12,7 +12,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'eb4eb9ef7c20070a7f3a3ba6126999f596892c48ef1303a66995c10d48b52940';
 
 // Logger setup
 const logger = winston.createLogger({
